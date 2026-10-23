@@ -1,0 +1,76 @@
+name: Build fork image
+
+# This fork's own image: `dev` (upstream master plus my open PRs) as ghcr.io/ryanpf/romm:dev, for
+# my server. Not for upstream; keep this commit out of PR branches.
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-image-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/romm
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The fork has no release tags, so the version comes from upstream's latest one reachable
+      # from here, with the commit as semver build metadata (the frontend still compares it as
+      # that release, so its new-version banner works).
+      - name: Set version
+        id: version
+        run: |
+          git fetch --no-tags https://github.com/rommapp/romm.git 'refs/tags/*:refs/tags/*'
+          base=$(git describe --tags --abbrev=0 --match '[0-9]*.[0-9]*.[0-9]*' --exclude '*-*')
+          version="${base}+dev.${GITHUB_SHA::9}"
+          sed -i "s/<version>/$version/" backend/__version__.py
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push full image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          file: docker/Dockerfile
+          context: .
+          platforms: linux/amd64
+          target: full-image
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:dev
+            ${{ env.IMAGE }}:dev-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.licenses=AGPL-3.0-only
+          # See build.yml: both stages `apk upgrade` off a fixed base digest.
+          no-cache-filters: python-runtime,production-stage
+          cache-from: type=gha,scope=fork-image
+          cache-to: type=gha,scope=fork-image,mode=max
