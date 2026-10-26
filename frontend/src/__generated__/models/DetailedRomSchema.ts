@@ -29,6 +29,8 @@ import type { UserNoteSchema } from './UserNoteSchema';
 import type { UserSaveSchema } from './UserSaveSchema';
 import type { UserScreenshotSchema } from './UserScreenshotSchema';
 import type { UserStateSchema } from './UserStateSchema';
+import type { UserVideoSchema } from './UserVideoSchema';
+import type { VideoSchema } from './VideoSchema';
 export type DetailedRomSchema = {
     id: number;
     igdb_id: (number | null);
@@ -123,6 +125,8 @@ export type DetailedRomSchema = {
     all_user_states: Array<UserStateSchema>;
     user_screenshots: Array<ScreenshotSchema>;
     all_user_screenshots: Array<UserScreenshotSchema>;
+    user_videos: Array<VideoSchema>;
+    all_user_videos: Array<UserVideoSchema>;
     user_collections: Array<UserCollectionSchema>;
     all_user_notes: Array<UserNoteSchema>;
     download_formats: Array<string>;

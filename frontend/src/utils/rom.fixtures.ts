@@ -179,6 +179,8 @@ export function detailedRomFixture(
     all_user_states: [],
     user_screenshots: [],
     all_user_screenshots: [],
+    user_videos: [],
+    all_user_videos: [],
     user_collections: [],
     all_user_notes: [],
     download_formats: [],

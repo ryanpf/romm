@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import Delete, Select, Update
 
 from decorators.database import INJECTED_SESSION, begin_session
-from models.assets import Save, Screenshot, State
+from models.assets import Save, Screenshot, State, Video
 from models.base import with_file_name_parts
 
 from .base_handler import DBBaseHandler
@@ -101,13 +101,13 @@ class DBScreenshotsHandler(DBBaseHandler):
     def is_bound(
         self,
         screenshot: Screenshot,
-        ignoring: Save | State | None = None,
+        ignoring: Save | State | Video | None = None,
         session: Session = INJECTED_SESSION,
     ) -> bool:
-        """Whether a save or state other than `ignoring` shows the screenshot
-        as its thumbnail."""
+        """Whether a save, state or video other than `ignoring` shows the
+        screenshot as its thumbnail."""
         names = pydash.compact([screenshot.file_name, screenshot.file_name_no_ext])
-        for model in (Save, State):
+        for model in (Save, State, Video):
             query = select(model.file_name, model.file_name_no_ext).filter(
                 model.rom_id == screenshot.rom_id,
                 model.user_id == screenshot.user_id,

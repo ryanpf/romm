@@ -63,6 +63,21 @@ class UserScreenshotSchema(ScreenshotSchema):
     user_updated_at: UTCDatetime | None = None
 
 
+class VideoSchema(BaseAsset):
+    is_public: bool = False
+    # The poster uploaded with it, if any.
+    screenshot: ScreenshotSchema | None
+
+
+class UserVideoSchema(VideoSchema):
+    """A gallery video enriched with its owner's identity, for the community
+    view. Mirrors UserScreenshotSchema."""
+
+    username: str
+    user_avatar_path: str = ""
+    user_updated_at: UTCDatetime | None = None
+
+
 class SaveSchema(BaseAsset, AssetAnnotations):
     emulator: str | None
     slot: str | None = None

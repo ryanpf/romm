@@ -74,7 +74,7 @@ from handler.metadata.steam_handler import STEAM_PLATFORMS, SteamRom
 from logger.formatter import BLUE, LIGHTYELLOW
 from logger.formatter import highlight as hl
 from logger.logger import log
-from models.assets import MemoryCardVersion, Save, Screenshot, State
+from models.assets import MemoryCardVersion, Save, Screenshot, State, Video
 from models.firmware import Firmware
 from models.platform import Platform
 from models.rom import (
@@ -1979,3 +1979,16 @@ async def scan_screenshot(
     )
     scanned_asset = await _scan_asset(file_name, screenshots_path)
     return Screenshot(**scanned_asset)
+
+
+async def scan_video(
+    file_name: str,
+    user: User,
+    platform_fs_slug: str,
+    rom_id: int,
+) -> Video:
+    videos_path = fs_asset_handler.build_videos_file_path(
+        user=user, platform_fs_slug=platform_fs_slug, rom_id=rom_id
+    )
+    scanned_asset = await _scan_asset(file_name, videos_path)
+    return Video(**scanned_asset)

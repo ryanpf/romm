@@ -1,4 +1,4 @@
-"""Filing a state or screenshot: write the bytes, scan them, upsert the row.
+"""Filing a state, screenshot or video: write the bytes, scan them, upsert the row.
 
 Shared by the upload routes and the streaming sync. What differs between them
 (dedup, retention, where the bytes came from) stays with the caller. So does
@@ -20,15 +20,16 @@ from handler.database import (
     db_save_handler,
     db_screenshot_handler,
     db_state_handler,
+    db_video_handler,
 )
 from handler.database.base_handler import sync_session
 from handler.database.saves_handler import UnhashedVersions
 from handler.filesystem import fs_asset_handler
 from handler.redis_handler import async_cache
-from handler.scan_handler import scan_screenshot, scan_state
+from handler.scan_handler import scan_screenshot, scan_state, scan_video
 from logger.formatter import highlight as hl
 from logger.logger import log
-from models.assets import Save, SaveLineage, Screenshot, State
+from models.assets import Save, SaveLineage, Screenshot, State, Video
 from models.base import compute_file_name_no_ext
 from models.rom import Rom
 from models.user import User
@@ -186,6 +187,35 @@ async def store_screenshot(
     )
 
 
+async def store_video(
+    user: User, rom: Rom, content: AssetContent, filename: str
+) -> Video:
+    """Write a gallery video and file its row, updating one already at that name."""
+    videos_path = fs_asset_handler.build_videos_file_path(
+        user=user, platform_fs_slug=rom.platform_slug, rom_id=rom.id
+    )
+    await fs_asset_handler.write_file(file=content, path=videos_path, filename=filename)
+
+    scanned = await scan_video(
+        file_name=filename,
+        user=user,
+        platform_fs_slug=rom.platform_slug,
+        rom_id=rom.id,
+    )
+    existing = db_video_handler.get_video(
+        rom_id=rom.id, user_id=user.id, file_name=filename
+    )
+    if existing is None:
+        scanned.rom_id = rom.id
+        scanned.user_id = user.id
+        return db_video_handler.add_video(video=scanned)
+
+    return db_video_handler.update_video(
+        existing.id,
+        {"file_size_bytes": scanned.file_size_bytes, "missing_from_fs": False},
+    )
+
+
 async def remove_asset_file(file_path: str, what: str) -> None:
     """Remove an asset file; one already gone is only logged."""
     try:
@@ -211,6 +241,13 @@ async def release_thumbnail(screenshot: Screenshot | None) -> None:
     ):
         return
     await remove_asset_file(path, "Screenshot file")
+
+
+async def remove_video(video: Video) -> None:
+    """Drop a video row with its file and poster."""
+    db_video_handler.delete_video(video.id)
+    await remove_asset_file(video.full_path, "Video file")
+    await release_thumbnail(video.screenshot)
 
 
 async def remove_save(save: Save) -> None:

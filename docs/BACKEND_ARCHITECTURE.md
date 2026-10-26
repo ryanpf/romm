@@ -248,6 +248,7 @@ backend/
 │   │   ├── saves_handler.py         # Save slot grouping, sync state
 │   │   ├── states_handler.py        # Save state CRUD
 │   │   ├── screenshots_handler.py   # Screenshot CRUD
+│   │   ├── videos_handler.py        # Gallery video CRUD
 │   │   ├── firmware_handler.py      # BIOS/firmware CRUD
 │   │   ├── collections_handler.py   # Regular/smart/virtual collections
 │   │   ├── devices_handler.py       # Device registration, fingerprinting
@@ -297,7 +298,7 @@ backend/
 │   ├── platform.py            # Platform
 │   ├── rom.py                 # Rom, RomFile, RomMetadata, RomUser, RomNote
 │   ├── collection.py          # Collection, SmartCollection, VirtualCollection
-│   ├── assets.py              # Save, State, Screenshot
+│   ├── assets.py              # Save, State, Screenshot, Video
 │   ├── device.py              # Device, SyncMode enum
 │   ├── device_save_sync.py    # DeviceSaveSync
 │   ├── firmware.py            # Firmware
@@ -544,7 +545,7 @@ Constants: `FILE_NAME_MAX_LENGTH=450`, `FILE_PATH_MAX_LENGTH=1000`, `FILE_EXTENS
 | `ra_progression`  | JSON                              | RetroAchievements data                          |
 | `ui_settings`     | JSON                              | User preferences                                |
 
-**Relationships:** saves (1:M), states (1:M), screenshots (1:M), rom_users (1:M), notes (1:M), collections (1:M), smart_collections (1:M), devices (1:M, cascade), client_tokens (1:M, cascade)
+**Relationships:** saves (1:M), states (1:M), screenshots (1:M), videos (1:M), rom_users (1:M), notes (1:M), collections (1:M), smart_collections (1:M), devices (1:M, cascade), client_tokens (1:M, cascade)
 
 ---
 
@@ -588,7 +589,7 @@ Constants: `FILE_NAME_MAX_LENGTH=450`, `FILE_PATH_MAX_LENGTH=1000`, `FILE_EXTENS
 | **Hashes**            | `crc_hash`, `md5_hash`, `sha1_hash`, `ra_hash`                                                                                                                                                              | File integrity          |
 | **State**             | `missing_from_fs`                                                                                                                                                                                           | Filesystem sync         |
 
-**Relationships:** platform (M:1), files (1:M), saves (1:M), states (1:M), screenshots (1:M), rom_users (1:M), notes (1:M), metadatum (1:1), sibling_roms (M:M self-referential), collections (M:M)
+**Relationships:** platform (M:1), files (1:M), saves (1:M), states (1:M), screenshots (1:M), videos (1:M), rom_users (1:M), notes (1:M), metadatum (1:1), sibling_roms (M:M self-referential), collections (M:M)
 
 ---
 
@@ -726,19 +727,20 @@ resolves at most `MAX_VIRTUAL_COLLECTION_COVERS` per collection.
 
 ---
 
-#### Assets (Saves, States, Screenshots)
+#### Assets (Saves, States, Screenshots, Videos)
 
-All three share a similar structure:
+All four share a similar structure:
 
 | Table         | Extra Columns                      | Notes               |
 | ------------- | ---------------------------------- | ------------------- |
 | `saves`       | `emulator`, `slot`, `content_hash` | Device sync support |
 | `states`      | `emulator`                         | Save states         |
-| `screenshots` |                                    | In-game captures    |
+| `screenshots` | `is_gallery`, `is_public`          | In-game captures    |
+| `videos`      | `is_public`                        | Gameplay clips      |
 
 Common columns: `id`, `rom_id` (FK), `user_id` (FK), `file_name`, `file_path`, `file_size_bytes`, `missing_from_fs`
 
-Saves additionally link to `device_save_sync` for cross-device tracking.
+Saves additionally link to `device_save_sync` for cross-device tracking. A video's poster is a screenshot named after the video's file (`clip.mp4.jpg`), bound by stem as a state's picture is.
 
 ---
 
@@ -1062,6 +1064,17 @@ World`), so a name shared across platforms resolves to the lowest visible ROM id
 | PUT    | `/{id}`        | ASSETS_WRITE | Update screenshot  |
 | POST   | `/delete`      | ASSETS_WRITE | Bulk delete        |
 
+#### Videos (`/api/videos`)
+
+Per-user gallery videos, private until shared. Listed on `GET /api/roms/{id}` as `user_videos` (own) and `all_user_videos` (own plus others' public).
+
+| Method | Path            | Scope        | Description                                          |
+| ------ | --------------- | ------------ | ---------------------------------------------------- |
+| POST   | `/?rom_id=`     | ASSETS_WRITE | Upload `videoFile`, optional `screenshotFile` poster |
+| GET    | `/{id}/content` | ASSETS_READ  | Stream inline (Range requests)                       |
+| PUT    | `/{id}`         | ASSETS_WRITE | Share or unshare (poster follows)                    |
+| DELETE | `/{id}`         | ASSETS_WRITE | Delete with its file and poster                      |
+
 ### 6.11 Devices (`/api/devices`)
 
 | Method | Path                      | Scope                    | Description                                                   |
@@ -1284,7 +1297,7 @@ The codebase exposes roughly **175 HTTP routes** and **11 WebSocket handlers** a
 me.read / me.write           : Own profile
 roms.read / roms.write       : ROM data
 platforms.read / platforms.write : Platform data
-assets.read / assets.write   : Saves, states, screenshots
+assets.read / assets.write   : Saves, states, screenshots, videos
 devices.read / devices.write : Device management
 firmware.read / firmware.write : BIOS files
 collections.read / collections.write : Collections
@@ -1795,7 +1808,8 @@ Uses `watchfiles` to monitor the library directory for changes. When enabled (`E
 │           └── {rom_id}/
 │               ├── saves/
 │               ├── states/
-│               └── screenshots/
+│               ├── screenshots/
+│               └── videos/
 │
 └── config/
     └── config.yml                   # YAML configuration
