@@ -16,6 +16,8 @@ from endpoints.responses.assets import (
     UserSaveSchema,
     UserScreenshotSchema,
     UserStateSchema,
+    UserVideoSchema,
+    VideoSchema,
 )
 from handler.metadata.csdb_handler import CsdbMetadata
 from handler.metadata.demozoo_handler import DemozooMetadata
@@ -629,6 +631,8 @@ class DetailedRomSchema(RomSchema):
     all_user_states: list[UserStateSchema]
     user_screenshots: list[ScreenshotSchema]
     all_user_screenshots: list[UserScreenshotSchema]
+    user_videos: list[VideoSchema]
+    all_user_videos: list[UserVideoSchema]
     user_collections: list[UserCollectionSchema]
     all_user_notes: list[UserNoteSchema]
     # What the caller can ask a `?format=` download of the rom's single file for.
@@ -668,6 +672,9 @@ class DetailedRomSchema(RomSchema):
             ScreenshotSchema.model_validate(s)
             for s in db_rom.screenshots
             if s.user_id == user_id
+        ]
+        db_rom.user_videos = [  # type: ignore[attr-defined]
+            VideoSchema.model_validate(v) for v in db_rom.videos if v.user_id == user_id
         ]
         from handler.database import db_collection_handler
 
@@ -715,6 +722,22 @@ class DetailedRomSchema(RomSchema):
                 }
             )
             for s in gallery_screenshots
+        ]
+
+        from handler.database import db_video_handler
+
+        db_rom.all_user_videos = [  # type: ignore[attr-defined]
+            UserVideoSchema.model_validate(
+                {
+                    **VideoSchema.model_validate(v).model_dump(),
+                    "username": v.user.username,
+                    "user_avatar_path": v.user.avatar_path,
+                    "user_updated_at": v.user.updated_at,
+                }
+            )
+            for v in db_video_handler.get_rom_gallery_videos(
+                rom_id=db_rom.id, user_id=user_id
+            )
         ]
 
         # Saves/states visible to this user: own (public + private) plus other
@@ -767,4 +790,8 @@ class DetailedRomSchema(RomSchema):
 
     @field_validator("user_screenshots")
     def sort_user_screenshots(cls, v: list[ScreenshotSchema]) -> list[ScreenshotSchema]:
+        return sorted(v, key=lambda x: x.created_at, reverse=True)
+
+    @field_validator("user_videos")
+    def sort_user_videos(cls, v: list[VideoSchema]) -> list[VideoSchema]:
         return sorted(v, key=lambda x: x.created_at, reverse=True)

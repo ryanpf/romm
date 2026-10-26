@@ -10,8 +10,9 @@ from handler.database import (
     db_save_handler,
     db_screenshot_handler,
     db_state_handler,
+    db_video_handler,
 )
-from models.assets import Save, Screenshot, State
+from models.assets import Save, Screenshot, State, Video
 from models.client_token import ClientToken
 from models.firmware import Firmware
 from models.platform import Platform
@@ -98,6 +99,12 @@ def make_screenshot(
     """Persist a screenshot; the model derives the filename parts from `file_name`."""
     fields = _asset_fields(rom, user, file_name, "screenshots")
     return db_screenshot_handler.add_screenshot(Screenshot(**(fields | overrides)))
+
+
+def make_video(rom: Rom, user: User, file_name: str, /, **overrides: Any) -> Video:
+    """Persist a gallery video; the model derives the filename parts from `file_name`."""
+    fields = _asset_fields(rom, user, file_name, "videos")
+    return db_video_handler.add_video(Video(**(fields | overrides)))
 
 
 def make_firmware(

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-// Combined Manual + Screenshots + Artwork + Soundtrack tab for GameDetails.
+// Combined Manual + Screenshots + Videos + Artwork + Soundtrack tab for GameDetails.
 // This shell owns the subtab navigation (mirrored to `?subtab=`) and the
 // soundtrack panel; each other subtab is its own self-contained component
-// (ManualSubtab, ScreenshotsSubtab, ArtworkSubtab).
+// (ManualSubtab, ScreenshotsSubtab, VideosSubtab, ArtworkSubtab).
 //
 // Soundtrack behaviour:
 //   * Subtab always rendered; the empty state drives the upload CTA
@@ -41,6 +41,9 @@ const SoundtrackPanel = defineAsyncComponent(
 const ScreenshotsSubtab = defineAsyncComponent(
   () => import("@/components/GameDetails/ScreenshotsSubtab.vue"),
 );
+const VideosSubtab = defineAsyncComponent(
+  () => import("@/components/GameDetails/VideosSubtab.vue"),
+);
 const ArtworkSubtab = defineAsyncComponent(
   () => import("@/components/GameDetails/ArtworkSubtab.vue"),
 );
@@ -68,6 +71,7 @@ const validSubtabs = [
   "manual",
   "walkthrough",
   "screenshots",
+  "videos",
   "artwork",
   "soundtrack",
 ] as const;
@@ -117,6 +121,11 @@ const subtabDefs = computed<SubtabNavItem<Subtab>[]>(() => [
     id: "screenshots",
     label: t("rom.screenshots"),
     icon: "mdi-image-multiple-outline",
+  },
+  {
+    id: "videos",
+    label: t("rom.videos"),
+    icon: "mdi-video-outline",
   },
   {
     id: "artwork",
@@ -256,6 +265,15 @@ async function deleteSoundtrack(fileId: number) {
         v-bind="panelAttrs('screenshots')"
       >
         <ScreenshotsSubtab :rom="rom" />
+      </section>
+
+      <!-- Videos subtab: the user's own gallery videos and others' public ones. -->
+      <section
+        v-show="subTab === 'videos'"
+        class="r-media__panel"
+        v-bind="panelAttrs('videos')"
+      >
+        <VideosSubtab :rom="rom" />
       </section>
 
       <!-- Artwork subtab: read-only gallery of scraped art assets

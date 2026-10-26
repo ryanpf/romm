@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// ScreenshotEditDialog: one of the user's gallery screenshots, where its
-// visibility is set like every other shared thing's.
+// ScreenshotEditDialog: one of the user's gallery screenshots (or videos, by
+// `title`), where its visibility is set like every other shared thing's.
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch.vue";
@@ -11,8 +11,9 @@ const props = withDefaults(
     modelValue: boolean;
     isPublic?: boolean;
     busy?: boolean;
+    title?: string;
   }>(),
-  { isPublic: false, busy: false },
+  { isPublic: false, busy: false, title: "" },
 );
 
 const emit = defineEmits<{
@@ -61,7 +62,7 @@ function submit(): void {
     "
   >
     <template #header>
-      <span>{{ t("rom.edit-screenshot") }}</span>
+      <span>{{ title || t("rom.edit-screenshot") }}</span>
     </template>
 
     <template #content>

@@ -14,7 +14,11 @@ from fastapi.responses import FileResponse
 from config import ASSETS_BASE_PATH
 from logger.logger import log
 from models.user import User
-from utils.media_types import IMAGE_EXT_BY_MIME_TYPE
+from utils.media_types import (
+    IMAGE_EXT_BY_MIME_TYPE,
+    guess_media_file_type,
+    is_allowed_video_file,
+)
 
 from .base_handler import FSHandler
 
@@ -150,6 +154,24 @@ def build_asset_file_response(
     )
 
 
+def build_video_file_response(
+    resolved_path: Path, filename: str | None = None
+) -> FileResponse:
+    """Serve a gallery video inline under its trusted type, so `<video>` can
+    play and seek it (Starlette answers Range requests)."""
+    download_name = filename or resolved_path.name
+    if not is_allowed_video_file(download_name):
+        return build_asset_file_response(resolved_path, filename)
+
+    return FileResponse(
+        path=str(resolved_path),
+        filename=download_name,
+        media_type=guess_media_file_type(download_name),
+        content_disposition_type="inline",
+        headers={"X-Content-Type-Options": "nosniff"},
+    )
+
+
 class FSAssetsHandler(FSHandler):
     def __init__(self) -> None:
         super().__init__(base_path=ASSETS_BASE_PATH)
@@ -212,6 +234,12 @@ class FSAssetsHandler(FSHandler):
         return self._build_asset_file_path(
             user, "screenshots", platform_fs_slug, rom_id, emulator
         )
+
+    # /users/557365723a31/videos/n64/{rom.id}
+    def build_videos_file_path(
+        self, user: User, platform_fs_slug: str, rom_id: int
+    ) -> str:
+        return self._build_asset_file_path(user, "videos", platform_fs_slug, rom_id)
 
     # /users/557365723a31/memory_cards/pcsx2/{card_id}
     def build_memory_cards_file_path(

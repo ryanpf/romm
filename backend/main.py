@@ -62,6 +62,7 @@ from endpoints.streaming import router as streaming_router
 from endpoints.sync import router as sync_router
 from endpoints.tasks import router as tasks_router
 from endpoints.user import router as user_router
+from endpoints.videos import router as videos_router
 from handler.activity_handler import activity_handler
 from handler.auth.constants import SESSION_COOKIE_NAME
 from handler.auth.hybrid_auth import HybridAuthBackend
@@ -137,6 +138,7 @@ app.add_middleware(
         re.compile(r"^/api/saves"),
         re.compile(r"^/api/states"),
         re.compile(r"^/api/screenshots"),
+        re.compile(r"^/api/videos"),
         re.compile(r"^/api/sync/retroarch"),
     ],
 )
@@ -211,6 +213,7 @@ app.include_router(configs_router, prefix="/api")
 app.include_router(stats_router, prefix="/api")
 app.include_router(logs_router, prefix="/api")
 app.include_router(screenshots_router, prefix="/api")
+app.include_router(videos_router, prefix="/api")
 app.include_router(firmware_router, prefix="/api")
 app.include_router(collections_router, prefix="/api")
 app.include_router(export_router, prefix="/api")

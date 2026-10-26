@@ -21,6 +21,7 @@ from .states_handler import DBStatesHandler
 from .stats_handler import DBStatsHandler
 from .sync_sessions_handler import DBSyncSessionsHandler
 from .users_handler import DBUsersHandler
+from .videos_handler import DBVideosHandler
 
 db_audit_event_handler = DBAuditEventsHandler()
 db_client_token_handler = DBClientTokensHandler()
@@ -45,3 +46,4 @@ db_state_handler = DBStatesHandler()
 db_stats_handler = DBStatsHandler()
 db_sync_session_handler = DBSyncSessionsHandler()
 db_user_handler = DBUsersHandler()
+db_video_handler = DBVideosHandler()

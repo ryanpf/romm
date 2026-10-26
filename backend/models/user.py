@@ -15,7 +15,7 @@ from models.permission import PermissionGroup
 from utils.database import CustomJSON, ExactString
 
 if TYPE_CHECKING:
-    from models.assets import MemoryCard, Save, Screenshot, State
+    from models.assets import MemoryCard, Save, Screenshot, State, Video
     from models.client_token import ClientToken
     from models.collection import Collection, SmartCollection
     from models.device import Device
@@ -113,6 +113,7 @@ class User(BaseModel, SimpleUser):
     screenshots: Mapped[list[Screenshot]] = relationship(
         lazy="raise", back_populates="user"
     )
+    videos: Mapped[list[Video]] = relationship(lazy="raise", back_populates="user")
     rom_users: Mapped[list[RomUser]] = relationship(lazy="raise", back_populates="user")
     notes: Mapped[list[RomNote]] = relationship(lazy="raise", back_populates="user")
     collections: Mapped[list[Collection]] = relationship(

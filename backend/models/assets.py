@@ -104,6 +104,33 @@ class Screenshot(RomAsset):
     user: Mapped[User] = relationship(lazy="joined", back_populates="screenshots")
 
 
+class Video(RomAsset):
+    __tablename__ = "videos"
+    __table_args__ = (
+        Index("ix_videos_rom_user", "rom_id", "user_id"),
+        Index("idx_videos_public", "is_public"),
+        {"extend_existing": True},
+    )
+
+    # Mirrors Screenshot: private to its owner until shared with the community.
+    is_public: Mapped[bool] = mapped_column(default=False)
+
+    rom: Mapped[Rom] = relationship(lazy="joined", back_populates="videos")
+    user: Mapped[User] = relationship(lazy="joined", back_populates="videos")
+
+    @cached_property
+    def screenshot(self) -> Screenshot | None:
+        """The poster uploaded with the video, bound by filename stem as a state's picture is."""
+        from handler.database import db_screenshot_handler
+
+        return db_screenshot_handler.get_screenshot(
+            rom_id=self.rom_id,
+            user_id=self.user_id,
+            file_name=self.file_name,
+            file_name_no_ext=self.file_name_no_ext,
+        )
+
+
 class Save(RomAsset):
     __tablename__ = "saves"
     __table_args__ = (

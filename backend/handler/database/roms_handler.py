@@ -62,7 +62,7 @@ from handler.database.rom_filters import (
 from handler.filesystem.roms_handler import rom_file_unchanged
 from handler.redis_handler import sync_cache
 from logger.logger import log
-from models.assets import Save, Screenshot, State
+from models.assets import Save, Screenshot, State, Video
 from models.base import PRERELEASE_FILENAME_TAGS, compute_file_name_parts
 from models.collection import Collection, CollectionRom, SmartCollection
 from models.music import MusicFavoriteTrack, MusicPlaylistTrack
@@ -670,6 +670,7 @@ def with_details[**P, R](func: Callable[P, R]) -> Callable[P, R]:
             selectinload(Rom.screenshots).options(
                 raiseload(Screenshot.rom),
             ),
+            selectinload(Rom.videos).options(raiseload(Video.rom)),
             selectinload(Rom.rom_users).options(
                 raiseload(RomUser.rom), raiseload(RomUser.user)
             ),

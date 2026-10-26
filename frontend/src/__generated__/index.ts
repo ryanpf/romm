@@ -28,6 +28,7 @@ export type { Body_add_screenshot_api_screenshots_post } from './models/Body_add
 export type { Body_add_smart_collection_api_collections_smart_post } from './models/Body_add_smart_collection_api_collections_smart_post';
 export type { Body_add_state_api_states_post } from './models/Body_add_state_api_states_post';
 export type { Body_add_user_api_users_post } from './models/Body_add_user_api_users_post';
+export type { Body_add_video_api_videos_post } from './models/Body_add_video_api_videos_post';
 export type { Body_confirm_download_api_saves__id__downloaded_post } from './models/Body_confirm_download_api_saves__id__downloaded_post';
 export type { Body_create_user_from_invite_api_users_register_post } from './models/Body_create_user_from_invite_api_users_register_post';
 export type { Body_delete_firmware_api_firmware_delete_post } from './models/Body_delete_firmware_api_firmware_delete_post';
@@ -62,6 +63,7 @@ export type { Body_update_state_api_states__id__put } from './models/Body_update
 export type { Body_update_state_favorite_api_states__id__favorite_put } from './models/Body_update_state_favorite_api_states__id__favorite_put';
 export type { Body_update_state_labels_api_states__id__labels_put } from './models/Body_update_state_labels_api_states__id__labels_put';
 export type { Body_update_state_visibility_api_states__id__visibility_put } from './models/Body_update_state_visibility_api_states__id__visibility_put';
+export type { Body_update_video_api_videos__id__put } from './models/Body_update_video_api_videos__id__put';
 export type { Body_upload_memory_card_version_api_memory_cards__id__versions_post } from './models/Body_upload_memory_card_version_api_memory_cards__id__versions_post';
 export type { BulkOperationResponse } from './models/BulkOperationResponse';
 export type { ClaimStreamingSessionRequest } from './models/ClaimStreamingSessionRequest';
@@ -321,7 +323,9 @@ export type { UserSaveSchema } from './models/UserSaveSchema';
 export type { UserSchema } from './models/UserSchema';
 export type { UserScreenshotSchema } from './models/UserScreenshotSchema';
 export type { UserStateSchema } from './models/UserStateSchema';
+export type { UserVideoSchema } from './models/UserVideoSchema';
 export type { ValidationError } from './models/ValidationError';
+export type { VideoSchema } from './models/VideoSchema';
 export type { VirtualCollectionSchema } from './models/VirtualCollectionSchema';
 export type { VolumeRequest } from './models/VolumeRequest';
 export type { VolumeResponse } from './models/VolumeResponse';
