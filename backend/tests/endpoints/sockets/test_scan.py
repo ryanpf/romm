@@ -62,7 +62,7 @@ from handler.redis_handler import async_cache, redis_lock, scan_queue
 from handler.rom_files import RomFilesRefresh
 from handler.scan_handler import MetadataSource, ScanType
 from handler.scan_jobs import SCAN_PLATFORMS_FUNC
-from handler.socket_handler import socket_handler
+from handler.socket_handler import SCAN_ROOM, socket_handler
 from models.audit_event import AuditAction
 from models.firmware import Firmware
 from models.notification import NotificationKind, NotificationLevel
@@ -2303,6 +2303,7 @@ class TestPostScanRecommendations:
         await scan_platforms(platform_ids=[], metadata_sources=[])
 
         assert patched.emit.await_args.args[0] == "scan:done"
+        assert patched.emit.await_args.kwargs == {"room": SCAN_ROOM}
 
 
 class TestPostScanIdentityKeyStatistics:
@@ -2326,6 +2327,7 @@ class TestPostScanIdentityKeyStatistics:
         await scan_platforms(platform_ids=[], metadata_sources=[])
 
         assert patched.emit.await_args.args[0] == "scan:done"
+        assert patched.emit.await_args.kwargs == {"room": SCAN_ROOM}
 
 
 class TestGetPico8CoverUrl:
@@ -3121,6 +3123,7 @@ class TestIdentifyRomFiles:
         identify_harness.db.get_rom_simple.assert_called_once_with(rom.id)
         socket_manager.emit.assert_awaited_once()
         assert socket_manager.emit.await_args.args[0] == "scan:scanning_rom"
+        assert socket_manager.emit.await_args.kwargs == {"room": SCAN_ROOM}
 
     async def test_unchanged_rom_emits_nothing(self, identify_harness):
         identify_harness.refresh.return_value = RomFilesRefresh(

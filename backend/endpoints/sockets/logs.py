@@ -3,9 +3,9 @@
 Pieces:
 - ``connect`` handler on the main socket server: resolves the session user,
   joins them to their own ``user:{id}`` room, and, if they are an admin, also
-  joins the ``admin`` room. It never rejects a connection, so the existing
-  scan/sync sockets keep working for everyone. It also ties the socket to its
-  login session, which ``disconnect`` undoes.
+  joins the ``scan`` and ``admin`` rooms. It never rejects a connection, so the
+  sync sockets keep working for everyone. It also ties the socket to its login
+  session, which ``disconnect`` undoes.
 - ``start_log_forwarder``: a single background task (Redis-lock guarded) that
   subscribes to the ``romm:logs`` pub/sub channel — fed by ``LogStreamHandler``
   in every backend process — and relays each line to the ``admin`` room.
@@ -21,7 +21,7 @@ import socketio
 from config import DISABLE_LOGS_VIEWER
 from endpoints.sockets.activity import activity_on_disconnect, store_authenticated_user
 from handler.redis_handler import async_cache
-from handler.socket_handler import socket_handler
+from handler.socket_handler import SCAN_ROOM, socket_handler
 from logger.log_stream_handler import LOG_BUFFER_KEY, LOG_CHANNEL
 from logger.logger import log
 from models.user import Role
@@ -39,10 +39,10 @@ async def connect(sid: str, environ: dict[str, Any], auth: Any = None) -> None:
     Stores the user id in the socket session so activity events can trust the
     server-resolved identity instead of a client-supplied ``user_id``, joins
     every authenticated user to their own ``user:{id}`` room (the target for
-    sync and streaming push notifications), and joins admins to the
-    log-streaming room. Always returns ``None`` (accepts the connection):
-    only identity storage and room membership are gated, so the existing
-    scan/sync sockets keep working for everyone.
+    sync and streaming push notifications), and joins admins to the scan and
+    log-streaming rooms. Always returns ``None`` (accepts the connection):
+    only identity storage and room membership are gated, so the sync sockets
+    keep working for everyone.
     """
     try:
         user = await socket_handler.authenticate(sid, environ)
@@ -52,8 +52,10 @@ async def connect(sid: str, environ: dict[str, Any], auth: Any = None) -> None:
         await store_authenticated_user(sid, user.id)
         await socket_handler.socket_server.enter_room(sid, f"user:{user.id}")
 
-        if not DISABLE_LOGS_VIEWER and user.role == Role.ADMIN:
-            await socket_handler.socket_server.enter_room(sid, ADMIN_ROOM)
+        if user.role == Role.ADMIN:
+            await socket_handler.socket_server.enter_room(sid, SCAN_ROOM)
+            if not DISABLE_LOGS_VIEWER:
+                await socket_handler.socket_server.enter_room(sid, ADMIN_ROOM)
     except Exception:  # noqa: BLE001 - never let auth resolution refuse a socket
         log.exception("Failed to resolve user on socket connect")
 

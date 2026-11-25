@@ -4,7 +4,7 @@ import pytest
 
 from endpoints.sockets import logs
 from handler.database import db_user_handler
-from handler.socket_handler import socket_handler
+from handler.socket_handler import SCAN_ROOM, socket_handler
 from models.user import Role
 from utils import auth as auth_utils
 
@@ -40,6 +40,28 @@ async def test_ties_the_socket_to_its_login_session(mocker, user, enter_room, bi
 
     enter_room.assert_awaited_once_with("sid-1", "user:3")
     bind.assert_awaited_once_with("sid-1", "s1")
+
+
+@pytest.mark.parametrize("logs_disabled", [False, True])
+async def test_an_admin_joins_the_scan_room(
+    mocker, user, enter_room, bind, logs_disabled
+):
+    user.role = Role.ADMIN
+    mocker.patch.object(logs, "DISABLE_LOGS_VIEWER", logs_disabled)
+    _session(mocker, iss="romm:auth", sub="admin", session_id="s1")
+
+    await logs.connect("sid-1", {})
+
+    rooms = [call.args[1] for call in enter_room.await_args_list]
+    assert rooms == ["user:3", SCAN_ROOM] + ([] if logs_disabled else [logs.ADMIN_ROOM])
+
+
+async def test_an_anonymous_socket_joins_no_room(mocker, user, enter_room, bind):
+    _session(mocker)
+
+    await logs.connect("sid-1", {})
+
+    enter_room.assert_not_awaited()
 
 
 async def test_an_anonymous_socket_is_tied_to_nothing(mocker, user, enter_room, bind):

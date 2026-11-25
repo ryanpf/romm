@@ -71,6 +71,7 @@ from handler.metadata.ss_handler import (
     note_rate_limited_rom,
 )
 from handler.metadata.steam_handler import STEAM_PLATFORMS, SteamRom
+from handler.socket_handler import SCAN_ROOM
 from logger.formatter import BLUE, LIGHTYELLOW
 from logger.formatter import highlight as hl
 from logger.logger import log
@@ -587,7 +588,7 @@ async def emit_scanning_rom(
         exclude=_SCANNING_ROM_EXCLUDE
     )
     payload["is_new"] = is_new
-    await socket_manager.emit("scan:scanning_rom", payload)
+    await socket_manager.emit("scan:scanning_rom", payload, room=SCAN_ROOM)
 
 
 async def scan_rom(

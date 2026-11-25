@@ -89,7 +89,7 @@ from handler.scan_jobs import (
     get_running_scan_job,
     get_scheduled_scan_jobs,
 )
-from handler.socket_handler import socket_handler
+from handler.socket_handler import SCAN_ROOM, socket_handler
 from logger.formatter import BLUE, LIGHTYELLOW
 from logger.formatter import highlight as hl
 from logger.logger import log
@@ -160,7 +160,7 @@ def report_scan_failure(
     started_by_user_id = (get_job_kwargs(job) or {}).get("started_by_user_id")
 
     async def report() -> None:
-        await _get_socket_manager().emit("scan:done_ko", reason)
+        await _get_socket_manager().emit("scan:done_ko", reason, room=SCAN_ROOM)
         await notify_scan_end(started_by_user_id, reason)
 
     record(
@@ -238,7 +238,7 @@ class ScanStats:
         self._published_at = now
         stats = self.to_dict()
         update_job_meta({"scan_stats": stats})
-        await socket_manager.emit("scan:update_stats", stats)
+        await socket_manager.emit("scan:update_stats", stats, room=SCAN_ROOM)
 
     async def update(
         self, socket_manager: socketio.AsyncRedisManager, **kwargs: int
@@ -1030,6 +1030,7 @@ async def _identify_platform(
             ),
             "new_firmware_count": new_firmware,
         },
+        room=SCAN_ROOM,
     )
 
     # This reduces the number of socket emissions
@@ -1229,7 +1230,7 @@ async def scan_platforms(
         """End the scan, reporting whatever a coalesced increment held back."""
         update_job_meta({SCAN_REPORTED_META_KEY: True})
         await scan_stats.flush(socket_manager)
-        await socket_manager.emit(event, payload)
+        await socket_manager.emit(event, payload, room=SCAN_ROOM)
         failed = event == "scan:done_ko"
         record(
             AuditAction.SCAN_FINISH,

@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 # Where a socket's own session records the login session that opened it.
 LOGIN_SESSION_ID_KEY: Final = "login_session_id"
 DEVICES_NAMESPACE: Final = "/devices"
+# Scan events name every ROM, whoever it is hidden from, so only admins join.
+SCAN_ROOM: Final = "scan"
 
 
 def client_token_sockets_key(token_id: int) -> str:
