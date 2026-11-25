@@ -48,6 +48,7 @@ from sqlalchemy.sql.dml import Insert
 from sqlalchemy.sql.elements import ColumnElement, UnaryExpression
 from sqlalchemy.sql.selectable import Select
 
+from config import HIDE_NEW_ROMS_FROM_GROUPS
 from config.config_manager import config_manager as cm
 from decorators.database import INJECTED_SESSION, begin_session
 from exceptions.database_exceptions import RomFileOwnerChangedError
@@ -66,6 +67,7 @@ from models.assets import Save, Screenshot, State, Video
 from models.base import PRERELEASE_FILENAME_TAGS, compute_file_name_parts
 from models.collection import Collection, CollectionRom, SmartCollection
 from models.music import MusicFavoriteTrack, MusicPlaylistTrack
+from models.permission import HiddenEntity, PermEntity, PermissionGroup
 from models.platform import Platform
 from models.rom import (
     ALTERNATIVE_NAME_SOURCES,
@@ -855,6 +857,21 @@ def _track_text_match(search: str) -> ColumnElement[bool]:
     )
 
 
+def _hide_new_rom(rom_id: int, session: Session) -> None:
+    """Hide a ROM from the HIDE_NEW_ROMS_FROM_GROUPS groups."""
+    groups = session.execute(
+        select(PermissionGroup.id, PermissionGroup.name).where(
+            PermissionGroup.name.in_(HIDE_NEW_ROMS_FROM_GROUPS)
+        )
+    ).all()
+    if missing := HIDE_NEW_ROMS_FROM_GROUPS - {group.name for group in groups}:
+        log.error(f"HIDE_NEW_ROMS_FROM_GROUPS has no such groups: {sorted(missing)}")
+    session.add_all(
+        HiddenEntity(entity=PermEntity.ROMS, entity_id=rom_id, group_id=group.id)
+        for group in groups
+    )
+
+
 class DBRomsHandler(DBBaseHandler):
     @begin_session
     @with_details
@@ -865,7 +882,11 @@ class DBRomsHandler(DBBaseHandler):
         session: Session = INJECTED_SESSION,
     ) -> Rom:
         rom = session.merge(rom)
+        is_new = rom in session.new
         session.flush()
+        # In the insert's own transaction, so the ROM is never briefly visible.
+        if is_new and HIDE_NEW_ROMS_FROM_GROUPS:
+            _hide_new_rom(rom.id, session)
 
         return session.scalars(query.filter_by(id=rom.id).limit(1)).one()
 

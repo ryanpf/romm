@@ -274,6 +274,10 @@ OIDC_END_SESSION_ENDPOINT: Final[str] = _get_env("OIDC_END_SESSION_ENDPOINT", ""
 
 # SCANS
 SCAN_TIMEOUT: Final[int] = safe_int(_get_env("SCAN_TIMEOUT"), 60 * 60 * 4)  # 4 hours
+# Permission groups every new ROM starts out hidden from, by name
+HIDE_NEW_ROMS_FROM_GROUPS: Final[frozenset[str]] = _get_env_set(
+    "HIDE_NEW_ROMS_FROM_GROUPS"
+)
 SCAN_WORKERS: Final[int] = max(1, safe_int(_get_env("SCAN_WORKERS"), 4))
 
 # TASKS
